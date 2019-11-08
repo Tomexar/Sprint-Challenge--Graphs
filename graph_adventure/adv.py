@@ -23,6 +23,85 @@ player = Player("Name", world.startingRoom)
 # FILL THIS IN
 traversalPath = ['n', 's']
 
+class Queue():
+    def __init__(self):
+        self.queue = []
+    def enqueue(self, value):
+        self.queue.append(value)
+    def dequeue(self):
+        if self.size() > 0:
+            return self.queue.pop(0)
+        else:
+            return None
+    def size(self):
+        return len(self.queue)
+    
+
+def unexplored(current_path, room_id, player):
+    visited = set()
+    qq = Queue()
+    path = [room_id]
+    qq.enqueue(path)
+
+    while qq.size() > 0:
+        p = qq.dequeue()
+        v = p[0]
+        if v == '?':
+            path = p[1:]
+            break
+        if v not in visited:
+            visited.add(v)
+            for neighbors in current_path[v]:
+                node = current_path[v][neighbors]
+                new_path = p.copy()
+                new_path.insert(0, node)
+                qq.enqueue(new_path)
+    player_move_directions = []
+    while len(path) > 1:
+        current = path.pop(-1)
+        for route in current_path[current]:
+            if current_path[current][route] == path[-1]:
+                player_move_directions.append(route)
+    for move in player_move_directions:
+        player.travel(move)
+    return player_move_directions
+    
+def opposite_direction(point):
+    if point is 'n':
+        direction = 's'
+    elif point is 's':
+        direction = 'n'
+    elif point is 'e':
+        direction = 'w'
+    elif point is 'w':
+        direction = 'e'
+    return direction
+
+visited = {}
+
+while len(visited) < len(roomGraph):
+    roomId = player.currentRoom.id
+    roomExits = player.currentRoom.getExits()
+    if roomId not in visited:
+        visited[roomId] = { ways: '?' for ways in roomExits }
+    unvisited = [way for way in visited[roomId] if visited[roomId][way] == '?']
+    if len(unvisited) > 0:
+        next_room_index = random.randint(0, len(unvisited) - 1)
+        next_way = unvisited[next_room_index]
+        player.travel(next_way)
+        traversalPath.append(next_way)
+        next_roomId = player.currentRoom.id
+        visited[roomId][next_way] = next_roomId
+        if next_roomId not in visited:
+            next_roomExits = player.currentRoom.getExits()
+            visited[next_roomId] = { ways: '?' for ways in next_roomExits }
+        opposite_way = opposite_direction(next_way)
+        visited[next_roomId][opposite_way] = roomId
+    else:
+        traversalPath += unexplored(visited, roomId, player)
+
+
+
 
 # TRAVERSAL TEST
 visited_rooms = set()
